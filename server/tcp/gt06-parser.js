@@ -116,10 +116,10 @@ function parsePacket(packet, isLong) {
  * Contiene el IMEI del dispositivo (8 bytes BCD)
  */
 function parseLogin(data) {
-  // IMEI en formato BCD, 8 bytes
+  // IMEI/ID en formato BCD, 8 bytes
   const imeiHex = data.slice(0, 8).toString('hex');
-  // Remover el primer dígito (siempre 0) para obtener 15 dígitos del IMEI
-  const imei = imeiHex.replace(/^0/, '');
+  // Remover ceros iniciales para obtener el IMEI (15 dígitos) o ID (10 dígitos)
+  const imei = imeiHex.replace(/^0+/, '');
   
   return { imei };
 }
