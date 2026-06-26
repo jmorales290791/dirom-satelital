@@ -24,6 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initMap();
   loadDevices();
   connectWebSocket();
+
+  // Auto-refresh posiciones cada 10 segundos
+  setInterval(() => {
+    if (currentPage === 'map') {
+      loadDevices();
+    }
+  }, 10000);
 });
 
 function initUI() {
@@ -104,7 +111,7 @@ function updateMarker(device) {
       <p>Velocidad: <span class="value">${speed || 0} km/h</span></p>
       <p>Dirección: <span class="value">${course || 0}°</span></p>
       <p>Estado: <span class="value">${status === 'online' ? '🟢 En línea' : '🔴 Fuera de línea'}</span></p>
-      <p>Última actualización: <span class="value">${device.last_update ? new Date(device.last_update).toLocaleString() : 'N/A'}</span></p>
+      <p>Última actualización: <span class="value">${device.last_update ? new Date(device.last_update).toLocaleString('es-MX', {timeZone: 'America/Mexico_City'}) : 'N/A'}</span></p>
       <p style="margin-top:8px;">
         <button class="btn btn-primary btn-small" onclick="showDeviceHistory('${imei}')">Ver Historial</button>
       </p>
@@ -486,7 +493,7 @@ async function loadAdminDevices() {
               <td>${d.vehicle_plate || '-'}</td>
               <td>${d.owner_name || '-'}</td>
               <td><span class="status-badge status-${d.status === 'online' ? 'online' : 'offline'}"><span class="status-dot"></span> ${d.status}</span></td>
-              <td>${d.last_update ? new Date(d.last_update).toLocaleString() : 'Nunca'}</td>
+              <td>${d.last_update ? new Date(d.last_update).toLocaleString('es-MX', {timeZone: 'America/Mexico_City'}) : 'Nunca'}</td>
               <td>
                 <button class="btn btn-primary btn-small" onclick="editDevice(${d.id})">Editar</button>
                 <button class="btn btn-danger btn-small" onclick="deleteDevice(${d.id})">Eliminar</button>
