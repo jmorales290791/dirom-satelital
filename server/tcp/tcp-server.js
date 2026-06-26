@@ -70,7 +70,9 @@ class TcpGpsServer {
               
               // Responder según protocolo
               if (protocol === 'eelink') {
-                socket.write(eelink.buildLoginResponse(packet.sequence));
+                const resp = eelink.buildLoginResponse(packet.sequence);
+                socket.write(resp);
+                console.log(`[TCP] Login response enviado a ${deviceImei} (seq: ${packet.sequence})`);
               } else {
                 socket.write(gt06.buildLoginResponse(packet.serial));
               }
@@ -188,7 +190,9 @@ class TcpGpsServer {
               break;
 
             default:
-              console.log(`[TCP] Paquete tipo '${packet.type}' de ${deviceImei || 'desconocido'}`);
+              if (deviceImei) {
+                console.log(`[TCP] Paquete tipo '${packet.type}' (PID: 0x${packet.pid ? packet.pid.toString(16) : '??'}) de ${deviceImei}`);
+              }
           }
         }
       } catch (err) {

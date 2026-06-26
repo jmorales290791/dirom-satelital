@@ -88,18 +88,17 @@ function parsePacket(packet) {
  * IMEI (8 bytes) + Language(1) + Timezone(1) + SysVer(2) + AppVer(2) + ...
  */
 function parseLogin(data) {
-  // IMEI: 8 bytes en formato BCD/hex
+  // IMEI: 8 bytes — cada byte es 2 dígitos BCD
   const imeiBuffer = data.slice(0, 8);
   let imei = '';
   for (let i = 0; i < 8; i++) {
     imei += imeiBuffer[i].toString(16).padStart(2, '0');
   }
-  // El IMEI real tiene 15 dígitos, remover el primer 0
-  imei = imei.replace(/^0+/, '');
-  if (imei.length > 15) imei = imei.substring(0, 15);
+  // El IMEI tiene 15 dígitos (primer nibble es 0, se remueve)
+  imei = imei.replace(/^0/, '');
 
-  const language = data[8]; // 0x00=Chinese, 0x01=English
-  const timezone = data.readInt8(9); // en unidades de 15 min
+  const language = data.length > 8 ? data[8] : 0;
+  const timezone = data.length > 9 ? data.readInt8(9) : 0;
 
   return { imei, language, timezone };
 }
