@@ -61,8 +61,8 @@ module.exports = function(db, tcpServer) {
         return res.status(400).json({ error: 'IMEI, nombre y usuario son requeridos' });
       }
 
-      if (imei.length < 15) {
-        return res.status(400).json({ error: 'El IMEI debe tener al menos 15 dígitos' });
+      if (imei.length < 10) {
+        return res.status(400).json({ error: 'El IMEI/ID debe tener al menos 10 dígitos' });
       }
 
       // Verificar IMEI duplicado
