@@ -798,3 +798,69 @@ async function apiDelete(endpoint) {
   }
   return response.json();
 }
+
+// ==================== CHANGE PASSWORD ====================
+function showChangePassword() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.id = 'passwordModal';
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>🔑 Cambiar Contraseña</h3>
+      <div class="form-group">
+        <label>Contraseña actual</label>
+        <input type="password" id="currentPass" placeholder="Tu contraseña actual">
+      </div>
+      <div class="form-group">
+        <label>Nueva contraseña</label>
+        <input type="password" id="newPass" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="form-group">
+        <label>Confirmar nueva contraseña</label>
+        <input type="password" id="confirmPass" placeholder="Repite la nueva contraseña">
+      </div>
+      <div id="passError" style="color:var(--danger);font-size:13px;margin-bottom:12px;display:none;"></div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" onclick="closeModal('passwordModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="changePassword()">Guardar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function changePassword() {
+  const current = document.getElementById('currentPass').value;
+  const newPass = document.getElementById('newPass').value;
+  const confirm = document.getElementById('confirmPass').value;
+  const errorDiv = document.getElementById('passError');
+
+  errorDiv.style.display = 'none';
+
+  if (!current || !newPass || !confirm) {
+    errorDiv.textContent = 'Todos los campos son requeridos';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  if (newPass.length < 6) {
+    errorDiv.textContent = 'La nueva contraseña debe tener al menos 6 caracteres';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  if (newPass !== confirm) {
+    errorDiv.textContent = 'Las contraseñas no coinciden';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    await apiPut('/auth/password', { currentPassword: current, newPassword: newPass });
+    closeModal('passwordModal');
+    alert('Contraseña cambiada exitosamente');
+  } catch (err) {
+    errorDiv.textContent = err.message || 'Error al cambiar contraseña';
+    errorDiv.style.display = 'block';
+  }
+}
