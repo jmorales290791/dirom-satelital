@@ -33,7 +33,7 @@ module.exports = function(db, tcpServer) {
    */
   router.get('/:id', (req, res) => {
     try {
-      const device = db.db.prepare('SELECT * FROM devices WHERE id = ?').get(parseInt(req.params.id));
+      const device = db._get('SELECT * FROM devices WHERE id = ?', [parseInt(req.params.id)]);
       if (!device) {
         return res.status(404).json({ error: 'Dispositivo no encontrado' });
       }
@@ -72,7 +72,7 @@ module.exports = function(db, tcpServer) {
       }
 
       const deviceId = db.createDevice({ imei, name, user_id, vehicle_plate, vehicle_type, vehicle_brand, vehicle_model, sim_number, sim_carrier });
-      const device = db.db.prepare('SELECT * FROM devices WHERE id = ?').get(deviceId);
+      const device = db._get('SELECT * FROM devices WHERE id = ?', [deviceId]);
       res.status(201).json(device);
     } catch (err) {
       console.error('[DEVICES] Error al crear dispositivo:', err.message);
@@ -87,13 +87,13 @@ module.exports = function(db, tcpServer) {
   router.put('/:id', requireAdmin, (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const device = db.db.prepare('SELECT * FROM devices WHERE id = ?').get(id);
+      const device = db._get('SELECT * FROM devices WHERE id = ?', [id]);
       if (!device) {
         return res.status(404).json({ error: 'Dispositivo no encontrado' });
       }
 
       db.updateDevice(id, req.body);
-      const updated = db.db.prepare('SELECT * FROM devices WHERE id = ?').get(id);
+      const updated = db._get('SELECT * FROM devices WHERE id = ?', [id]);
       res.json(updated);
     } catch (err) {
       res.status(500).json({ error: 'Error al actualizar dispositivo' });
@@ -120,7 +120,7 @@ module.exports = function(db, tcpServer) {
    */
   router.get('/:id/connected', (req, res) => {
     try {
-      const device = db.db.prepare('SELECT imei FROM devices WHERE id = ?').get(parseInt(req.params.id));
+      const device = db._get('SELECT imei FROM devices WHERE id = ?', [parseInt(req.params.id)]);
       if (!device) {
         return res.status(404).json({ error: 'Dispositivo no encontrado' });
       }

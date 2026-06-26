@@ -18,7 +18,7 @@ module.exports = function(db) {
       let positions;
       if (req.user.role === 'admin') {
         // Admin ve todos los dispositivos con posición
-        positions = db.db.prepare(`
+        positions = db._all(`
           SELECT d.id, d.imei, d.name, d.vehicle_plate, d.vehicle_type, d.status,
                  d.last_latitude as latitude, d.last_longitude as longitude,
                  d.last_speed as speed, d.last_course as course, d.last_update,
@@ -27,7 +27,7 @@ module.exports = function(db) {
           LEFT JOIN users u ON d.user_id = u.id
           WHERE d.active = 1 AND d.last_latitude IS NOT NULL
           ORDER BY d.status DESC, d.name
-        `).all();
+        `);
       } else {
         positions = db.getLastPositionsByUser(req.user.id);
       }
