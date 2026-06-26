@@ -488,6 +488,7 @@ async function loadAdminDevices() {
               <td><span class="status-badge status-${d.status === 'online' ? 'online' : 'offline'}"><span class="status-dot"></span> ${d.status}</span></td>
               <td>${d.last_update ? new Date(d.last_update).toLocaleString() : 'Nunca'}</td>
               <td>
+                <button class="btn btn-primary btn-small" onclick="editDevice(${d.id})">Editar</button>
                 <button class="btn btn-danger btn-small" onclick="deleteDevice(${d.id})">Eliminar</button>
               </td>
             </tr>
@@ -862,5 +863,101 @@ async function changePassword() {
   } catch (err) {
     errorDiv.textContent = err.message || 'Error al cambiar contraseña';
     errorDiv.style.display = 'block';
+  }
+}
+
+// ==================== EDIT DEVICE ====================
+async function editDevice(id) {
+  try {
+    const device = await apiGet(`/devices/${id}`);
+    const users = await apiGet('/users');
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay show';
+    modal.id = 'editDeviceModal';
+    modal.innerHTML = `
+      <div class="modal">
+        <h3>Editar Dispositivo</h3>
+        <div class="form-group">
+          <label>IMEI</label>
+          <input type="text" value="${device.imei}" disabled style="opacity:0.6;">
+        </div>
+        <div class="form-group">
+          <label>Nombre / Alias</label>
+          <input type="text" id="editDevName" value="${device.name || ''}">
+        </div>
+        <div class="form-group">
+          <label>Placa del vehículo</label>
+          <input type="text" id="editDevPlate" value="${device.vehicle_plate || ''}">
+        </div>
+        <div class="form-group">
+          <label>Tipo de vehículo</label>
+          <select id="editDevType" style="width:100%;padding:12px;background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;">
+            <option value="trailer" ${device.vehicle_type === 'trailer' ? 'selected' : ''}>Trailer</option>
+            <option value="camion" ${device.vehicle_type === 'camion' ? 'selected' : ''}>Camión</option>
+            <option value="camioneta" ${device.vehicle_type === 'camioneta' ? 'selected' : ''}>Camioneta</option>
+            <option value="auto" ${device.vehicle_type === 'auto' ? 'selected' : ''}>Auto</option>
+            <option value="moto" ${device.vehicle_type === 'moto' ? 'selected' : ''}>Moto</option>
+            <option value="otro" ${device.vehicle_type === 'otro' ? 'selected' : ''}>Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Asignar a cliente</label>
+          <select id="editDevUser" style="width:100%;padding:12px;background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;">
+            ${users.map(u => `<option value="${u.id}" ${u.id === device.user_id ? 'selected' : ''}>${u.name} (${u.username})${u.company ? ' - ' + u.company : ''}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Marca del vehículo</label>
+          <input type="text" id="editDevBrand" value="${device.vehicle_brand || ''}">
+        </div>
+        <div class="form-group">
+          <label>Modelo del vehículo</label>
+          <input type="text" id="editDevModel" value="${device.vehicle_model || ''}">
+        </div>
+        <div class="form-group">
+          <label>Número SIM</label>
+          <input type="text" id="editDevSim" value="${device.sim_number || ''}">
+        </div>
+        <div class="form-group">
+          <label>Operador SIM</label>
+          <input type="text" id="editDevCarrier" value="${device.sim_carrier || ''}">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" onclick="closeModal('editDeviceModal')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveEditDevice(${id})">Guardar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (err) {
+    alert('Error al cargar dispositivo: ' + (err.message || err));
+  }
+}
+
+async function saveEditDevice(id) {
+  const data = {
+    name: document.getElementById('editDevName').value.trim(),
+    vehicle_plate: document.getElementById('editDevPlate').value.trim(),
+    vehicle_type: document.getElementById('editDevType').value,
+    user_id: parseInt(document.getElementById('editDevUser').value),
+    vehicle_brand: document.getElementById('editDevBrand').value.trim(),
+    vehicle_model: document.getElementById('editDevModel').value.trim(),
+    sim_number: document.getElementById('editDevSim').value.trim(),
+    sim_carrier: document.getElementById('editDevCarrier').value.trim(),
+  };
+
+  if (!data.name) {
+    alert('El nombre es requerido');
+    return;
+  }
+
+  try {
+    await apiPut(`/devices/${id}`, data);
+    closeModal('editDeviceModal');
+    loadAdminDevices();
+    alert('Dispositivo actualizado correctamente');
+  } catch (err) {
+    alert(err.message || 'Error al actualizar');
   }
 }
