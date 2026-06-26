@@ -98,11 +98,21 @@ async function startServer() {
   // 6. Geofence Checker
   const geofenceChecker = new GeofenceChecker(db, notificationService, wsServer);
 
-  // 7. TCP GPS Server
+  // 7. TCP GPS Server - Puerto principal
   const tcpServer = new TcpGpsServer(TCP_PORT, db, wsServer);
   tcpServer.geofenceChecker = geofenceChecker;
   tcpServer.notificationService = notificationService;
   tcpServer.whatsappService = whatsappService;
+
+  // 8. Puertos adicionales para compatibilidad con más GPS
+  const EXTRA_PORTS = [8821, 5001, 5013, 5055, 6013];
+  const extraServers = EXTRA_PORTS.map(port => {
+    const srv = new TcpGpsServer(port, db, wsServer);
+    srv.geofenceChecker = geofenceChecker;
+    srv.notificationService = notificationService;
+    srv.whatsappService = whatsappService;
+    return srv;
+  });
 
   // ==================== ARRANQUE ====================
 
@@ -113,6 +123,11 @@ async function startServer() {
 
     // Iniciar servidor TCP para GPS
     tcpServer.start();
+
+    // Iniciar puertos adicionales
+    extraServers.forEach(srv => srv.start());
+
+    console.log('[GPS] Puertos activos: ' + [TCP_PORT, ...EXTRA_PORTS].join(', '));
 
     console.log('[GEOFENCE] Verificador de geocercas activo');
     console.log('[EMAIL] Servicio de notificaciones activo');
