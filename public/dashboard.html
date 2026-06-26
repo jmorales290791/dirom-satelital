@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIROM SATELITAL - Rastreo en Vivo</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    .connection-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(211, 47, 47, 0.15);
+      color: #ef5350;
+    }
+    .connection-status.connected {
+      background: rgba(0, 200, 83, 0.15);
+      color: var(--accent);
+    }
+    .device-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 4px 10px;
+    }
+    .history-controls {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+      box-shadow: var(--shadow);
+    }
+    .history-controls.show { display: flex; }
+    .history-controls input[type="date"] {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .history-controls label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .leaflet-popup-content-wrapper {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+    }
+    .leaflet-popup-tip { background: var(--bg-card) !important; }
+    .popup-content h4 { font-size: 14px; margin-bottom: 8px; color: var(--accent); }
+    .popup-content p { font-size: 12px; color: var(--text-secondary); margin: 4px 0; }
+    .popup-content .value { color: var(--text-primary); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>DIROM</h2>
+        <span class="brand-sub">Satelital</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item active" data-page="map">
+          <span class="nav-icon">🗺️</span> Mapa en Vivo
+        </a>
+        <a class="nav-item" data-page="history">
+          <span class="nav-icon">📍</span> Historial de Rutas
+        </a>
+        <a class="nav-item" data-page="alerts">
+          <span class="nav-icon">🔔</span> Alertas
+        </a>
+        <a class="nav-item" data-page="events">
+          <span class="nav-icon">📋</span> Eventos
+        </a>
+        <a class="nav-item" data-page="geofences">
+          <span class="nav-icon">📍</span> Geocercas
+        </a>
+        <a class="nav-item" data-page="reports">
+          <span class="nav-icon">📊</span> Reportes
+        </a>
+
+        <div class="nav-section-title" id="adminSection" style="display:none;">Administración</div>
+        <a class="nav-item" data-page="admin-devices" id="navAdminDevices" style="display:none;">
+          <span class="nav-icon">📡</span> Dispositivos
+        </a>
+        <a class="nav-item" data-page="admin-users" id="navAdminUsers" style="display:none;">
+          <span class="nav-icon">👥</span> Usuarios
+        </a>
+        <a class="nav-item" data-page="admin-email" id="navAdminEmail" style="display:none;">
+          <span class="nav-icon">📧</span> Notificaciones
+        </a>
+        <a class="nav-item" data-page="admin-whatsapp" id="navAdminWhatsapp" style="display:none;">
+          <span class="nav-icon">💬</span> WhatsApp
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-details">
+            <div class="name" id="userName">Admin</div>
+            <div class="role" id="userRole">Administrador</div>
+          </div>
+          <button class="logout-btn" onclick="logout()" title="Cerrar sesión">🚪</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="top-bar">
+        <h3 id="pageTitle">Rastreo en Vivo</h3>
+        <div class="top-bar-actions">
+          <span class="connection-status" id="wsStatus">
+            <span class="status-dot"></span> Desconectado
+          </span>
+          <span class="device-count" id="deviceCount">0 unidades</span>
+        </div>
+      </div>
+
+      <!-- Map View -->
+      <div class="map-container" id="mapView">
+        <div id="map"></div>
+
+        <!-- Device List Panel -->
+        <div class="device-panel" id="devicePanel">
+          <div class="device-panel-header">
+            <h4>Unidades</h4>
+            <span class="device-count" id="panelDeviceCount">0</span>
+          </div>
+          <div class="device-search">
+            <input type="text" placeholder="Buscar unidad..." id="deviceSearch" oninput="filterDevices()">
+          </div>
+          <div class="device-list" id="deviceList">
+            <p style="padding: 16px; color: var(--text-secondary); font-size: 13px;">Cargando unidades...</p>
+          </div>
+        </div>
+
+        <!-- History Controls -->
+        <div class="history-controls" id="historyControls">
+          <label>Desde:</label>
+          <input type="date" id="historyStart">
+          <label>Hasta:</label>
+          <input type="date" id="historyEnd">
+          <button class="btn btn-primary btn-small" onclick="loadHistory()">Ver Ruta</button>
+          <button class="btn btn-cancel btn-small" onclick="clearHistory()">Limpiar</button>
+        </div>
+      </div>
+
+      <!-- Alerts View -->
+      <div class="admin-content" id="alertsView" style="display:none;">
+        <h3 style="margin-bottom: 16px;">Alertas Recientes</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Unidad</th>
+              <th>Tipo</th>
+              <th>Mensaje</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="alertsTable">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Admin Views -->
+      <div class="admin-content" id="adminDevicesView" style="display:none;"></div>
+      <div class="admin-content" id="adminUsersView" style="display:none;"></div>
+      <div class="admin-content" id="adminEmailView" style="display:none;"></div>
+      <div class="admin-content" id="adminWhatsappView" style="display:none;"></div>
+
+      <!-- Geofences View -->
+      <div class="admin-content" id="geofencesView" style="display:none;">
+
+      <!-- Events View -->
+      <div class="admin-content" id="eventsView" style="display:none;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3>Geocercas</h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-success btn-small" onclick="startDrawCircle()">⭕ Círculo</button>
+            <button class="btn btn-primary btn-small" onclick="startDrawPolygon()">🔷 Polígono</button>
+          </div>
+        </div>
+        <div id="geofenceList"></div>
+      </div>
+
+      <!-- Reports View -->
+      <div class="admin-content" id="reportsView" style="display:none;"></div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/geofences.js"></script>
+  <script src="/js/reports.js"></script>
+  <script src="/js/events.js"></script>
+</body>
+</html>
