@@ -190,6 +190,15 @@ class TcpGpsServer {
               break;
 
             default:
+              // Responder paquetes que requieren ACK (message, param_set, etc)
+              if (protocol === 'eelink' && deviceImei && packet.sequence) {
+                const ack = Buffer.alloc(7);
+                ack[0] = 0x67; ack[1] = 0x67;
+                ack[2] = packet.pid;
+                ack.writeUInt16BE(2, 3);
+                ack.writeUInt16BE(packet.sequence, 5);
+                socket.write(ack);
+              }
               if (deviceImei) {
                 console.log(`[TCP] Paquete tipo '${packet.type}' (PID: 0x${packet.pid ? packet.pid.toString(16) : '??'}) de ${deviceImei}`);
               }

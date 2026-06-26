@@ -18,6 +18,7 @@ const PID = {
   WARNING: 0x14,
   REPORT: 0x15,
   MESSAGE: 0x16,
+  PARAM_SET: 0x1B,
   INSTRUCTION: 0x80,
 };
 
@@ -74,6 +75,10 @@ function parsePacket(packet) {
         return { ...result, type: 'warning', ...parseWarning(content) };
       case PID.REPORT:
         return { ...result, type: 'report', ...parseReport(content) };
+      case PID.MESSAGE:
+        return { ...result, type: 'message' };
+      case PID.PARAM_SET:
+        return { ...result, type: 'param_set' };
       default:
         return { ...result, type: 'unknown' };
     }
