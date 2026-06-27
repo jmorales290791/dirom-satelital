@@ -526,8 +526,24 @@ function showAddDeviceModal() {
     <div class="modal">
       <h3>Nuevo Dispositivo GPS</h3>
       <div class="form-group">
-        <label>IMEI del dispositivo</label>
-        <input type="text" id="devImei" placeholder="Ej: 860000000000001" maxlength="15">
+        <label>Modelo / Protocolo</label>
+        <select id="devModel" style="width:100%;padding:12px;background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;" onchange="onModelChange()">
+          <option value="eelink_tk419">EELINK TK419 (4G LTE) - Protocolo EELINK</option>
+          <option value="istartek_vt200l">iStartek VT200-L - Protocolo GT06</option>
+          <option value="micodus_mv730">MiCODUS MV730 - Protocolo GT06 (ID)</option>
+          <option value="micodus_mv720">MiCODUS MV720 - Protocolo GT06 (ID)</option>
+          <option value="concox_gt06n">Concox GT06N - Protocolo GT06</option>
+          <option value="coban_tk103">Coban TK103 - Protocolo GT06</option>
+          <option value="sinotrack_st901">Sinotrack ST-901 - Protocolo GT06</option>
+          <option value="otro_gt06">Otro (Protocolo GT06)</option>
+          <option value="otro_eelink">Otro (Protocolo EELINK)</option>
+        </select>
+      </div>
+      <div id="modelInfo" class="form-group" style="background:var(--bg-dark);border-radius:8px;padding:12px;font-size:12px;color:var(--text-secondary);line-height:1.6;"></div>
+      <div class="form-group">
+        <label id="devImeiLabel">IMEI del dispositivo</label>
+        <input type="text" id="devImei" placeholder="Ej: 860000000000001">
+        <small id="devImeiHint" style="color:var(--text-secondary);font-size:11px;"></small>
       </div>
       <div class="form-group">
         <label>Nombre / Alias</label>
@@ -563,6 +579,87 @@ function showAddDeviceModal() {
     </div>
   `;
   document.body.appendChild(modal);
+  onModelChange();
+}
+
+function onModelChange() {
+  const model = document.getElementById('devModel').value;
+  const info = document.getElementById('modelInfo');
+  const label = document.getElementById('devImeiLabel');
+  const hint = document.getElementById('devImeiHint');
+
+  const models = {
+    eelink_tk419: {
+      label: 'IMEI del dispositivo (15 dígitos)',
+      hint: 'Lo encuentras en la etiqueta del dispositivo. Ej: 864292043414695',
+      port: '5023',
+      protocol: 'EELINK v2.0',
+      smsServer: 'SERVER,tcp://216.238.66.234:5023#',
+      smsAPN: 'APN,[tu_apn]#',
+      info: '📡 <b>Puerto:</b> 5023 | <b>Protocolo:</b> EELINK v2.0<br>📲 <b>SMS configurar servidor:</b><br><code>SERVER,tcp://216.238.66.234:5023#</code><br>📲 <b>SMS configurar APN:</b><br><code>APN,internet.itelcel.com#</code>'
+    },
+    istartek_vt200l: {
+      label: 'IMEI del dispositivo (15 dígitos)',
+      hint: 'Lo encuentras en la etiqueta del dispositivo. Ej: 860000000000001',
+      port: '5023',
+      protocol: 'GT06',
+      info: '📡 <b>Puerto:</b> 5023 | <b>Protocolo:</b> GT06<br>📲 <b>SMS configurar servidor:</b><br><code>SERVER,1,216.238.66.234,5023,0#</code><br>📲 <b>SMS configurar APN:</b><br><code>APN,internet.itelcel.com#</code>'
+    },
+    micodus_mv730: {
+      label: 'ID del dispositivo (10 dígitos)',
+      hint: '⚠️ MiCODUS usa ID, NO el IMEI. Envía SMS "CXZT" al GPS para obtener el ID. Ej: 7301134826',
+      port: '8821 o 5023',
+      protocol: 'GT06 (variante MiCODUS)',
+      info: '📡 <b>Puerto:</b> 8821 (default) o 5023 | <b>Protocolo:</b> GT06<br>⚠️ <b>Usa ID, no IMEI.</b> Envía SMS <code>CXZT</code> para ver el ID.<br>📲 <b>SMS configurar servidor:</b><br><code>adminip123456,216.238.66.234:5023</code><br>📲 <b>SMS configurar APN:</b><br><code>apn123456,internet.itelcel.com</code><br>📲 <b>SMS reiniciar:</b> <code>reboot123456</code><br>📲 <b>SMS verificar estado:</b> <code>status123456</code><br><br>💡 Si GPRS:0, el chip no tiene datos. Verifica saldo/APN.'
+    },
+    micodus_mv720: {
+      label: 'ID del dispositivo (10 dígitos)',
+      hint: '⚠️ MiCODUS usa ID, NO el IMEI. Envía SMS "CXZT" al GPS para obtener el ID.',
+      port: '8821 o 5023',
+      protocol: 'GT06 (variante MiCODUS)',
+      info: '📡 <b>Puerto:</b> 8821 (default) o 5023 | <b>Protocolo:</b> GT06<br>⚠️ <b>Usa ID, no IMEI.</b> Envía SMS <code>CXZT</code> para ver el ID.<br>📲 <b>SMS configurar servidor:</b><br><code>adminip123456,216.238.66.234:5023</code><br>📲 <b>SMS configurar APN:</b><br><code>apn123456,internet.itelcel.com</code><br>📲 <b>SMS reiniciar:</b> <code>reboot123456</code>'
+    },
+    concox_gt06n: {
+      label: 'IMEI del dispositivo (15 dígitos)',
+      hint: 'Ej: 860000000000001',
+      port: '5023',
+      protocol: 'GT06',
+      info: '📡 <b>Puerto:</b> 5023 | <b>Protocolo:</b> GT06<br>📲 <b>SMS configurar servidor:</b><br><code>SERVER,1,216.238.66.234,5023,0#</code>'
+    },
+    coban_tk103: {
+      label: 'IMEI del dispositivo (15 dígitos)',
+      hint: 'Ej: 860000000000001',
+      port: '5023',
+      protocol: 'GT06',
+      info: '📡 <b>Puerto:</b> 5023 | <b>Protocolo:</b> GT06<br>📲 <b>SMS configurar servidor:</b><br><code>adminip 216.238.66.234 5023</code>'
+    },
+    sinotrack_st901: {
+      label: 'IMEI del dispositivo (15 dígitos)',
+      hint: 'Ej: 860000000000001',
+      port: '5023',
+      protocol: 'GT06',
+      info: '📡 <b>Puerto:</b> 5023 | <b>Protocolo:</b> GT06<br>📲 <b>SMS configurar servidor:</b><br><code>804#216.238.66.234#5023#</code>'
+    },
+    otro_gt06: {
+      label: 'IMEI del dispositivo (15 dígitos)',
+      hint: 'Dispositivo con protocolo GT06 (paquetes inician con 0x7878)',
+      port: '5023',
+      protocol: 'GT06',
+      info: '📡 <b>Puerto:</b> 5023 | <b>Protocolo:</b> GT06<br>Configura tu GPS con IP <code>216.238.66.234</code> y puerto <code>5023</code>'
+    },
+    otro_eelink: {
+      label: 'IMEI del dispositivo (15 dígitos)',
+      hint: 'Dispositivo con protocolo EELINK (paquetes inician con 0x6767)',
+      port: '5023',
+      protocol: 'EELINK',
+      info: '📡 <b>Puerto:</b> 5023 | <b>Protocolo:</b> EELINK<br>Configura tu GPS con IP <code>216.238.66.234</code> y puerto <code>5023</code>'
+    },
+  };
+
+  const m = models[model] || models.otro_gt06;
+  label.textContent = m.label;
+  hint.textContent = m.hint;
+  info.innerHTML = m.info;
 }
 
 async function saveDevice() {

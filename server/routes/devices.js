@@ -107,8 +107,15 @@ module.exports = function(db, tcpServer) {
   router.delete('/:id', requireAdmin, (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      db.deleteDevice(id);
-      res.json({ message: 'Dispositivo desactivado correctamente' });
+      // Borrado real para permitir re-registro
+      db._run('DELETE FROM positions WHERE device_id = ?', [id]);
+      db._run('DELETE FROM alerts WHERE device_id = ?', [id]);
+      db._run('DELETE FROM events_log WHERE device_id = ?', [id]);
+      db._run('DELETE FROM trips WHERE device_id = ?', [id]);
+      db._run('DELETE FROM device_geofences WHERE device_id = ?', [id]);
+      db._run('DELETE FROM devices WHERE id = ?', [id]);
+      db.save();
+      res.json({ message: 'Dispositivo eliminado correctamente' });
     } catch (err) {
       res.status(500).json({ error: 'Error al eliminar dispositivo' });
     }
