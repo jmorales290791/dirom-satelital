@@ -518,7 +518,10 @@ async function deleteDevice(id) {
   }
 }
 
-function showAddDeviceModal() {
+async function showAddDeviceModal() {
+  let users = [];
+  try { users = await apiGet('/users'); } catch(e) {}
+
   const modal = document.createElement('div');
   modal.className = 'modal-overlay show';
   modal.id = 'deviceModal';
@@ -565,8 +568,10 @@ function showAddDeviceModal() {
         </select>
       </div>
       <div class="form-group">
-        <label>Asignar a cliente (ID usuario)</label>
-        <input type="number" id="devUserId" placeholder="ID del usuario">
+        <label>Asignar a cliente</label>
+        <select id="devUserId" style="width:100%;padding:12px;background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;">
+          ${users.map(u => `<option value="${u.id}">${u.name} (${u.username})${u.company ? ' - ' + u.company : ''}</option>`).join('')}
+        </select>
       </div>
       <div class="form-group">
         <label>Número SIM</label>
@@ -673,7 +678,7 @@ async function saveDevice() {
   };
 
   if (!data.imei || !data.name || !data.user_id) {
-    alert('IMEI, nombre y usuario son requeridos');
+    alert('IMEI/ID, nombre y usuario son requeridos');
     return;
   }
 
