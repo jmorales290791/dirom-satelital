@@ -68,7 +68,20 @@ module.exports = function(db, tcpServer) {
       // Verificar IMEI duplicado
       const existing = db.getDeviceByImei(imei);
       if (existing) {
-        return res.status(409).json({ error: 'Ya existe un dispositivo con ese IMEI' });
+        if (existing.active === 1) {
+          // Duplicado real: dispositivo activo con el mismo IMEI
+          return res.status(409).json({ error: 'Ya existe un dispositivo activo con ese IMEI' });
+        }
+
+        // Fantasma de un borrado anterior (active = 0): limpiar para permitir re-alta
+        console.log(`[DEVICES] Limpiando dispositivo fantasma (id=${existing.id}, imei=${imei}) para permitir re-registro`);
+        db._run('DELETE FROM positions WHERE device_id = ?', [existing.id]);
+        db._run('DELETE FROM alerts WHERE device_id = ?', [existing.id]);
+        db._run('DELETE FROM events_log WHERE device_id = ?', [existing.id]);
+        db._run('DELETE FROM trips WHERE device_id = ?', [existing.id]);
+        db._run('DELETE FROM device_geofences WHERE device_id = ?', [existing.id]);
+        db._run('DELETE FROM devices WHERE id = ?', [existing.id]);
+        db.save();
       }
 
       const deviceId = db.createDevice({ imei, name, user_id, vehicle_plate, vehicle_type, vehicle_brand, vehicle_model, sim_number, sim_carrier });
