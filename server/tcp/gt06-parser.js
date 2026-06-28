@@ -78,8 +78,9 @@ function parsePacket(packet, isLong) {
   try {
     const headerSize = isLong ? 4 : 3;
     const protocolNumber = packet[headerSize];
-    const data = packet.slice(headerSize + 1, packet.length - 4); // Sin serial, CRC, end
-    const serial = packet.readUInt16BE(packet.length - 4);
+    // Los últimos 6 bytes son: serial(2) + CRC(2) + fin 0x0D0A(2)
+    const data = packet.slice(headerSize + 1, packet.length - 6); // Solo contenido de información
+    const serial = packet.readUInt16BE(packet.length - 6);
 
     const result = {
       protocolNumber,
@@ -189,14 +190,17 @@ function parseGpsData(data, offset) {
  * Parsea heartbeat (0x23)
  */
 function parseHeartbeat(data) {
+  // Estructura GT06: Terminal Info(1) + Nivel Voltaje(1, 0-6) + Señal GSM(1, 0-4) + Alarma/Idioma(2)
   const terminalInfo = data[0];
-  const voltage = data.readUInt16BE(1);
-  const gsmSignal = data[3];
-  
+  const voltageLevel = data[1]; // Nivel de batería 0-6 (GT06 NO reporta voltaje real)
+  const gsmSignal = data[2];    // Señal GSM 0-4
+
   return {
-    charging: (terminalInfo >> 7) & 0x01,
+    // Terminal Info bits: bit1=ACC/ignición, bit2=cargando
+    charging: (terminalInfo >> 2) & 0x01,
     ignition: (terminalInfo >> 1) & 0x01,
-    voltage: voltage / 100, // Voltaje en V
+    voltageLevel,
+    voltage: voltageLevel, // Nivel 0-6 (no son volts reales)
     gsmSignal,
   };
 }
@@ -214,8 +218,9 @@ function parseStatus(data) {
 function parseAlarm(data) {
   const gpsData = parseGpsData(data, 0);
   
-  // El byte de alarma está después de los datos GPS+LBS
-  const alarmType = data[data.length - 1];
+  // El paquete de alarma termina con: alarma(1 byte) + idioma(1 byte)
+  // El último byte es el idioma; la alarma es el penúltimo
+  const alarmType = data[data.length - 2];
   const alarmNames = {
     0x00: 'normal',
     0x01: 'sos',
